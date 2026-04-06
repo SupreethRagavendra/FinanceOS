@@ -6,7 +6,7 @@
     <meta name="description" content="FinanceOS — Modern Financial Dashboard with Role-Based Access Control">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') — FinanceOS</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="/css/app.css?v={{ time() }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
