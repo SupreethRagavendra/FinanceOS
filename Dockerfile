@@ -3,7 +3,7 @@ FROM php:8.3-apache
 # Use the official PHP extension installer (handles all deps automatically)
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions \
-    && install-php-extensions pdo_sqlite mbstring exif pcntl bcmath gd zip
+    && install-php-extensions pdo_sqlite mbstring exif pcntl bcmath gd zip intl opcache
 
 # Enable Apache mod_rewrite for Laravel routing
 RUN a2enmod rewrite
@@ -30,9 +30,15 @@ RUN mkdir -p database storage/logs storage/framework/sessions storage/framework/
     && touch database/database.sqlite \
     && cp .env.example .env
 
-# Install dependencies
+# Install dependencies (unlimited memory, ignore platform checks, skip all scripts)
 ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN composer install --optimize-autoloader --no-dev --no-interaction --no-scripts
+ENV COMPOSER_MEMORY_LIMIT=-1
+RUN php -d memory_limit=-1 /usr/bin/composer install \
+    --optimize-autoloader \
+    --no-dev \
+    --no-interaction \
+    --no-scripts \
+    --no-plugins
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \

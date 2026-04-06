@@ -28,6 +28,7 @@ touch database/database.sqlite
 chown -R www-data:www-data storage bootstrap/cache database
 
 # Clear config cache and rebuild
+php artisan package:discover --ansi
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
