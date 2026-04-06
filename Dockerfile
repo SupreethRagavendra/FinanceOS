@@ -1,51 +1,44 @@
 FROM php:8.3-apache
 
-# Install OS Dependencies for PHP extensions, Composer, and Node (if needed)
-RUN apt-get update && apt-get install -y \
-    libsqlite3-dev \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    git \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Use the official PHP extension installer (handles all deps automatically)
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions \
+    && install-php-extensions pdo_sqlite mbstring exif pcntl bcmath gd zip
 
-# Install crucial PHP extensions
-RUN docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd zip
-
-# Enable Apache Mod Rewrite for Laravel Routing
+# Enable Apache mod_rewrite for Laravel routing
 RUN a2enmod rewrite
 
-# Update apache document root to Laravel's public folder
-RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!/var/www/html/public!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# Update Apache document root to Laravel's public/ folder
+RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!/var/www/html/public!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Allow .htaccess overrides
+RUN echo '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n</Directory>' \
+    >> /etc/apache2/apache2.conf
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy existing application directory
+# Copy app source
 COPY . .
 
-# Establish fallback environment and database files before Composer runs
+# Bootstrap env + SQLite file before composer runs (avoids package:discover crash)
 RUN cp .env.example .env \
-    && mkdir -p database storage/logs bootstrap/cache \
-    && touch database/database.sqlite \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database \
+    && mkdir -p database storage/logs storage/framework/sessions storage/framework/views storage/framework/cache bootstrap/cache \
+    && touch database/database.sqlite
+
+# Install dependencies
+ENV COMPOSER_ALLOW_SUPERUSER=1
+RUN composer install --optimize-autoloader --no-dev --no-interaction --no-scripts
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 
-# Safely install PHP dependencies
-ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN composer install --optimize-autoloader --no-dev --no-interaction
-
-# Expose Render standard port
 EXPOSE 80
 
-# Switch to the entry script (compiles assets, runs migrations & starts apache)
 RUN chmod +x docker-start.sh
 CMD ["./docker-start.sh"]
