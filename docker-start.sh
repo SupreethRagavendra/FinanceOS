@@ -13,7 +13,15 @@ patch_env() {
 }
 
 [ -n "$APP_KEY" ]   && patch_env "APP_KEY"   "$APP_KEY"
-[ -n "$APP_URL" ]   && patch_env "APP_URL"   "$APP_URL"
+
+# Render automatically provides RENDER_EXTERNAL_URL (e.g. https://financeos-2.onrender.com)
+# Use it to set APP_URL so Laravel generates correct HTTPS URLs for routes/forms
+if [ -n "$RENDER_EXTERNAL_URL" ]; then
+    patch_env "APP_URL" "$RENDER_EXTERNAL_URL"
+elif [ -n "$APP_URL" ]; then
+    patch_env "APP_URL" "$APP_URL"
+fi
+
 [ -n "$APP_ENV" ]   && patch_env "APP_ENV"   "$APP_ENV"
 [ -n "$APP_DEBUG" ] && patch_env "APP_DEBUG" "$APP_DEBUG"
 
