@@ -30,7 +30,7 @@ RUN mkdir -p database storage/logs storage/framework/sessions storage/framework/
     && touch database/database.sqlite \
     && cp .env.example .env
 
-# Install dependencies (unlimited memory, ignore platform checks, skip all scripts)
+# Install dependencies (unlimited memory, bypass platform lock mismatch)
 ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV COMPOSER_MEMORY_LIMIT=-1
 RUN php -d memory_limit=-1 /usr/bin/composer install \
@@ -38,7 +38,7 @@ RUN php -d memory_limit=-1 /usr/bin/composer install \
     --no-dev \
     --no-interaction \
     --no-scripts \
-    --no-plugins
+    --ignore-platform-reqs
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
