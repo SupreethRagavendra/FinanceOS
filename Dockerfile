@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libzip-dev \
     zip \
     unzip \
     git \
@@ -13,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install crucial PHP extensions
-RUN docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd zip
 
 # Enable Apache Mod Rewrite for Laravel Routing
 RUN a2enmod rewrite
@@ -31,14 +32,16 @@ WORKDIR /var/www/html
 # Copy existing application directory
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --optimize-autoloader --no-dev
-
-# Ensure required directories exist and set appropriate permissions
-RUN mkdir -p database storage/logs bootstrap/cache \
+# Establish fallback environment and database files before Composer runs
+RUN cp .env.example .env \
+    && mkdir -p database storage/logs bootstrap/cache \
     && touch database/database.sqlite \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+
+# Safely install PHP dependencies
+ENV COMPOSER_ALLOW_SUPERUSER=1
+RUN composer install --optimize-autoloader --no-dev --no-interaction
 
 # Expose Render standard port
 EXPOSE 80
