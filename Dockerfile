@@ -25,10 +25,10 @@ WORKDIR /var/www/html
 # Copy app source
 COPY . .
 
-# Bootstrap env + SQLite file before composer runs (avoids package:discover crash)
-RUN cp .env.example .env \
-    && mkdir -p database storage/logs storage/framework/sessions storage/framework/views storage/framework/cache bootstrap/cache \
-    && touch database/database.sqlite
+# Bootstrap env + directories + SQLite file before composer runs
+RUN mkdir -p database storage/logs storage/framework/sessions storage/framework/views storage/framework/cache bootstrap/cache \
+    && touch database/database.sqlite \
+    && cp .env.example .env
 
 # Install dependencies
 ENV COMPOSER_ALLOW_SUPERUSER=1
