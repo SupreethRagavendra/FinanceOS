@@ -40,11 +40,12 @@ RUN php -d memory_limit=-1 /usr/bin/composer install \
     --no-scripts \
     --ignore-platform-reqs
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+# Set wide permissions so runtime script can manage ownership
+RUN chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 
 EXPOSE 80
 
+# Run as root so the entrypoint can chown/chmod and artisan can write files
+USER root
 RUN chmod +x docker-start.sh
-CMD ["./docker-start.sh"]
+CMD ["/bin/bash", "docker-start.sh"]
